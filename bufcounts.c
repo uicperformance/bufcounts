@@ -5,7 +5,7 @@
 #include <string.h>
 #include <malloc.h>
 #include "donottouch.h"
-#define ARRAY_SIZE 128
+#define ARRAY_SIZE 32
 #define THREAD_MAX 1
 #define ITERATIONS 100000
 
@@ -14,9 +14,8 @@ typedef struct {
     long total_count;
     buf buffer;
 } item;
-item items[ARRAY_SIZE]; // Array of structs
+item items[ARRAY_SIZE]; 
 
-// Function to increment the first element of each buffer
 void update_buffer_elements(unsigned thread_id) {
     for (int i = 0; i < ARRAY_SIZE; i++) {
     #if THREAD_MAX > 1
@@ -29,7 +28,6 @@ void update_buffer_elements(unsigned thread_id) {
     }
 }
 
-// Function to increment the first element of each buffer
 void update_item_counts(unsigned thread_id) {
     for (int i = 0; i < ARRAY_SIZE; i++) {
     #if THREAD_MAX > 1
@@ -41,7 +39,6 @@ void update_item_counts(unsigned thread_id) {
     #endif
     }
 }
-
 
 void* thread_function(void* arg) {
     int identifier = (int)(long)arg;  // Cast back to int
@@ -75,10 +72,7 @@ int main() {
     malloc_trim(0);
     struct mallinfo2 info = mallinfo2();
     printf("Heap size is %lu after allocating buffers. Buffers are %u total.\n",info.arena,ARRAY_SIZE*BUF_SIZE*8);
-
-
     pthread_t threads[THREAD_MAX];
-
     clock_gettime(CLOCK_MONOTONIC, &start_buffer);
         for (int i = 0; i < THREAD_MAX; i++) {
         if (pthread_create(&threads[i], NULL, thread_function, (void*)(long)i) != 0) {
@@ -109,15 +103,15 @@ int main() {
     }
     clock_gettime(CLOCK_MONOTONIC, &end_item);
 
-    // Check the first elements in all buf arrays
+    // Check that things match up
     for (int i = 0; i < ARRAY_SIZE; i++) {
         long sum = 0;
         for (int j = 0; j < THREAD_MAX; j++) {
             sum+=items[i].buffer.counter[j];
         }
-        if (sum != ITERATIONS*THREAD_MAX) {
-            printf("Error: Item %d has sum %ld != %d\n",
-                i,sum,ITERATIONS*THREAD_MAX);
+        if (sum != items[i].total_count) {
+            printf("Error: Item %d has sum %ld != %ld. Expected %d.\n",
+                i,sum,items[i].total_count,THREAD_MAX*ITERATIONS);
             correct = 0;
             break;
         }
@@ -134,8 +128,9 @@ int main() {
 
     // Output the result
     if (correct) {
-        printf("Each item count increment took %ld nanoseconds.\n", elapsed_ns_item / (ARRAY_SIZE * ITERATIONS * THREAD_MAX));
-        printf("Each buffer update took %ld nanoseconds.\n", elapsed_ns_buf / (ARRAY_SIZE * ITERATIONS * THREAD_MAX));
+        printf("Running with %d threads, %d items, %d iterations.\n",THREAD_MAX, ARRAY_SIZE, ITERATIONS);
+        printf("Each item count increment took %.2lf nanoseconds.\n", elapsed_ns_item / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
+        printf("Each buffer update took %.2lf nanoseconds.\n", elapsed_ns_buf / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
     } else {
         printf("Error: Buffer values are incorrect.\n");
     }
