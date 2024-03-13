@@ -11,6 +11,7 @@
 
 typedef struct {
     pthread_spinlock_t lock;
+    long total_count;
     buf buffer;
 } item;
 item items[ARRAY_SIZE]; // Array of structs
@@ -28,6 +29,20 @@ void update_buffer_elements(unsigned thread_id) {
     }
 }
 
+// Function to increment the first element of each buffer
+void update_item_counts(unsigned thread_id) {
+    for (int i = 0; i < ARRAY_SIZE; i++) {
+    #if THREAD_MAX > 1
+        pthread_spin_lock(&items[i].lock);
+    #endif
+        items[i].total_count++;
+    #if THREAD_MAX > 1
+        pthread_spin_unlock(&items[i].lock);
+    #endif
+    }
+}
+
+
 void* thread_function(void* arg) {
     int identifier = (int)(long)arg;  // Cast back to int
 
@@ -37,9 +52,18 @@ void* thread_function(void* arg) {
     return NULL;
 }
 
+void* thread_function2(void* arg) {
+    int identifier = (int)(long)arg;  // Cast back to int
+
+    for (int i = 0; i < ITERATIONS; i++) {
+        update_item_counts(identifier);
+    }
+    return NULL;
+}
+
+
 int main() {
-    struct timespec start, end;
-    long long int elapsed_ns;
+    struct timespec start_buffer, end_buffer, start_item, end_item;
     int correct = 1;
 
     // Initialize pthread_spinlock_t for each item
@@ -55,22 +79,35 @@ int main() {
 
     pthread_t threads[THREAD_MAX];
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    clock_gettime(CLOCK_MONOTONIC, &start_buffer);
         for (int i = 0; i < THREAD_MAX; i++) {
         if (pthread_create(&threads[i], NULL, thread_function, (void*)(long)i) != 0) {
             perror("Failed to create thread");
             return 1;
         }
     }
-
     for (int i = 0; i < THREAD_MAX; i++) {
         if (pthread_join(threads[i], NULL) != 0) {
             perror("Failed to join thread");
             return 1;
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &end_buffer);
 
-    clock_gettime(CLOCK_MONOTONIC, &end);
+    clock_gettime(CLOCK_MONOTONIC, &start_item);
+        for (int i = 0; i < THREAD_MAX; i++) {
+        if (pthread_create(&threads[i], NULL, thread_function2, (void*)(long)i) != 0) {
+            perror("Failed to create thread");
+            return 1;
+        }
+    }
+    for (int i = 0; i < THREAD_MAX; i++) {
+        if (pthread_join(threads[i], NULL) != 0) {
+            perror("Failed to join thread");
+            return 1;
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC, &end_item);
 
     // Check the first elements in all buf arrays
     for (int i = 0; i < ARRAY_SIZE; i++) {
@@ -92,11 +129,13 @@ int main() {
     }
 
     // Calculate elapsed time in nanoseconds
-    elapsed_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
+    long elapsed_ns_buf = (end_buffer.tv_sec - start_buffer.tv_sec) * 1000000000LL + (end_buffer.tv_nsec - start_buffer.tv_nsec);
+    long elapsed_ns_item = (end_item.tv_sec - start_item.tv_sec) * 1000000000LL + (end_item.tv_nsec - start_item.tv_nsec);
 
     // Output the result
     if (correct) {
-        printf("Each increment took %lld nanoseconds.\n", elapsed_ns / (ARRAY_SIZE * ITERATIONS * THREAD_MAX));
+        printf("Each item count increment took %ld nanoseconds.\n", elapsed_ns_item / (ARRAY_SIZE * ITERATIONS * THREAD_MAX));
+        printf("Each buffer update took %ld nanoseconds.\n", elapsed_ns_buf / (ARRAY_SIZE * ITERATIONS * THREAD_MAX));
     } else {
         printf("Error: Buffer values are incorrect.\n");
     }

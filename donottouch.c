@@ -1,6 +1,6 @@
 #include "donottouch.h"
 
-void update_buffer(buf *buffer, unsigned thread_id) {
+void update_buffer(buf *buffer, unsigned thread_id) {    
     buffer->counter[thread_id]++;
 }
 
