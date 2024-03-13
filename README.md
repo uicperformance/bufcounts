@@ -62,3 +62,6 @@ Right now, every thread updates the first number in a buffer's count array. Sinc
 
 If you space out the thread IDs so that they increment counts that are on different cache lines, does that help performance?
 
+## Turn-in
+
+Please post and discuss your results on Piazza. 
