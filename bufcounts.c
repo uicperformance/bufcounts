@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include "donottouch.h"
 #define ARRAY_SIZE 128
-#define THREAD_MAX 16
+#define THREAD_MAX 1
 #define ITERATIONS 100000
 
 typedef struct {
@@ -14,7 +14,6 @@ typedef struct {
     buf buffer;
 } item;
 item items[ARRAY_SIZE]; // Array of structs
-
 
 // Function to increment the first element of each buffer
 void update_buffer_elements(unsigned thread_id) {
