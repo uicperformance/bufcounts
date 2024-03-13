@@ -6,7 +6,7 @@
 #include <malloc.h>
 #include "donottouch.h"
 #define ARRAY_SIZE 128
-#define THREAD_MAX 1
+#define THREAD_MAX 16
 #define ITERATIONS 100000
 
 typedef struct {
@@ -19,9 +19,13 @@ item items[ARRAY_SIZE]; // Array of structs
 // Function to increment the first element of each buffer
 void update_buffer_elements(unsigned thread_id) {
     for (int i = 0; i < ARRAY_SIZE; i++) {
-//        pthread_spin_lock(&items[i].lock);
-        update_buffer(&items[i].buffer,thread_id);
-//        pthread_spin_unlock(&items[i].lock);
+    #if THREAD_MAX > 1
+        pthread_spin_lock(&items[i].lock);
+    #endif
+        update_buffer(&items[i].buffer,0);
+    #if THREAD_MAX > 1
+        pthread_spin_unlock(&items[i].lock);
+    #endif
     }
 }
 
@@ -38,11 +42,10 @@ int main() {
     struct timespec start, end;
     long long int elapsed_ns;
     int correct = 1;
-    unsigned long expected_value = ITERATIONS;
 
     // Initialize pthread_spinlock_t for each item
     for (int i = 0; i < ARRAY_SIZE; i++) {
-        memset(items[i].buffer.array,0,BUF_SIZE*8);
+        memset(items[i].buffer.counter,0,BUF_SIZE*8);
         pthread_spin_init(&items[i].lock, 0);
     }
 
@@ -72,14 +75,17 @@ int main() {
 
     // Check the first elements in all buf arrays
     for (int i = 0; i < ARRAY_SIZE; i++) {
+        long sum = 0;
         for (int j = 0; j < THREAD_MAX; j++) {
-            if (items[i].buffer.array[j] != expected_value) {
-                printf("Error: Item %d, element %d, has value %ld != %ld\n",
-                    i,j,items[i].buffer.array[j],expected_value);
-                correct = 0;
-                break;
-            }
+            sum+=items[i].buffer.counter[j];
         }
+        if (sum != ITERATIONS*THREAD_MAX) {
+            printf("Error: Item %d has sum %ld != %d\n",
+                i,sum,ITERATIONS*THREAD_MAX);
+            correct = 0;
+            break;
+        }
+
         if(check_buffer_alignment(&items[i].buffer)!=0) {
             printf("Error: Buffer is incorrectly aligned %p, should be aligned %lu.\n",
             &items[i].buffer, alignof(buf));
@@ -91,7 +97,7 @@ int main() {
 
     // Output the result
     if (correct) {
-        printf("Each increment took %lld nanoseconds.\n", elapsed_ns / (ARRAY_SIZE * ITERATIONS));
+        printf("Each increment took %lld nanoseconds.\n", elapsed_ns / (ARRAY_SIZE * ITERATIONS * THREAD_MAX));
     } else {
         printf("Error: Buffer values are incorrect.\n");
     }

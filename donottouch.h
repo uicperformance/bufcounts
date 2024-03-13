@@ -2,7 +2,7 @@
 #define BUF_SIZE 128
 
 typedef struct {
-    unsigned long array[BUF_SIZE];
+    unsigned long counter[BUF_SIZE];
 } __attribute__((aligned(BUF_SIZE*8))) buf;
 
 
