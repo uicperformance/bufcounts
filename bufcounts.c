@@ -5,9 +5,17 @@
 #include <string.h>
 #include <malloc.h>
 #include "donottouch.h"
+#ifndef ARRAY_SIZE
 #define ARRAY_SIZE 32
+#endif
+
+#ifndef THREAD_MAX
 #define THREAD_MAX 1
+#endif
+
+#ifndef ITERATIONS
 #define ITERATIONS 100000
+#endif
 
 typedef struct {
     pthread_spinlock_t lock;
