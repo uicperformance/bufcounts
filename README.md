@@ -78,6 +78,7 @@ Right now, every thread updates the first number in a buffer's count array. Sinc
 ### a buf has 128 counters, can you use that?
 
 If you space out the thread IDs so that they increment counts that are on different cache lines, does that help performance?
+Each counter is 8 bytes, so if you space the ID's out by 8, they'll end up on a 64-byte cache line each, eliminating cache contention. 
 
 ### what's happening between 32 and 64 items for the buffer update?
 
