@@ -79,6 +79,10 @@ Right now, every thread updates the first number in a buffer's count array. Sinc
 
 If you space out the thread IDs so that they increment counts that are on different cache lines, does that help performance?
 
+### what's happening between 32 and 64 items for the buffer update?
+
+Once your solution runs in the single ns per update with 16 threads, you may find that it goes a great deal slower with 64 items than with 32 items. Can you work out why?
+
 ## Turn-in
 
 Please post and discuss your results on Piazza. 
