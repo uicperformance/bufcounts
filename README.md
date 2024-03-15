@@ -1,6 +1,6 @@
 # A concurrent counting task
 
-In this assignment, one or more threads are collaborating on a task related to shared buffers. Start off by cloning this repo to *nodes*, and running ``make``. Run the program with ``./bufcount``. 
+In this assignment, one or more threads are collaborating on a task related to shared buffers. Start off by cloning this repo to *nodes*, and running ``make``. Run the program with ``./bufcount``. You can also run a few example configurations with ``make eval``.
 
 The program performs two main tasks. Updating an item count, for each of the items, and updating the buffer, for each of the items. Your task is to make this program run fast, per iteration, for both of these tasks. 
 
@@ -56,14 +56,16 @@ Try restricting which cores the program can use with taskset: `taskset -c 0-15 .
 
 How does performance vary with core assignment? What if you pick cores that are two interconnect hops apart? (say 0-7 and 32-39)?
 
-### switch to an atomic count
-
-For the counting part, you don't actually need a lock, you can use atomic operations on the integer instead. (such as https://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html). How much does this help?
-
 ### think about alignment and false sharing
 
-For both locks and basic atomic operations, false sharing (two separate data items sitting in the same cache line) can be a very big performance factor. 
-If you force the items to be on separate cache lines, even though they're not big enough for that any more, does that help? 
+False sharing (two separate data items sitting in the same cache line) can be a very big performance factor. 
+If you force the items to be on separate cache lines (try adding a char array of the right size to the item), does that help? 
+What about if you keep them 128 bytes apart?
+
+### switch to an atomic count
+
+For the counting part, you don't actually need a lock, you can use atomic operations on the integer instead. (such as 
+__sync_fetch_and_add(), https://gcc.gnu.org/onlinedocs/gcc-4.1.2/gcc/Atomic-Builtins.html). How much does this help?
 
 ### drop the lock for buffer updates
 
