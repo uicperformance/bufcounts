@@ -26,9 +26,14 @@ If you look at the item struct, you'll find that there's a buffer allocated insi
 ### memalign the bufs
 Instead of malloc, try using memalign. Pay attention to the heap size output from the malloc approach, vs. the output from the memalign approach. Try to figure out why memalign uses so much more memory than malloc. 
 
+Why does the item count run so much faster now?
+
 ### statically allocate the bufs separately
 Instead of memalign, try sticking the bufs in a statically allocated, separate array, and having the buf pointer in the item point to the appropriate item in this array. 
-How does the performance of this compare to the performance of the memalign version? How does the time per count compare to the buffer update now?
+
+How does the performance of this compare to the performance of the memalign version? Is there a statistically significant difference?
+What if you update ARRAY_SIZE to 128 instead of 32? Now you should see a substantial difference. Why does the memalign vs array allocation only make a big impact for ARRAY_SIZE 128? Once you form a hypothesis, try `perf stat -M Cache_Misses`. It measures a handy group of counters.
+Also, see if your hypothesis can predict something about ARRAY_SIZE 64.
 
 ## Multi-threaded
 
@@ -40,6 +45,16 @@ Here are some things to try. For the best learning experience, try them in order
 ### switch to a mutex lock
 
 With a spinlock, threads continuously try to grab the lock until they get it. This causes congestion. With mutex, the thread goes to sleep and is woken up when the lock is available. This, instead, causes system calls. Which one is the better choice? Try varying ARRAY_SIZE (number of locks, in this case) and MAX_THREADS to see if there are cases where one is better, and other cases when the other is better.
+
+Try running both cases with `strace -cfw`, to see how many system calls mutex creates. The `-f` is key here, since you want to trace the new threads we're creating, not just the main thread.  
+
+### observe some NUMA effects
+
+Now is a good time to have a look at the effect of non-uniform memory access times. When you simply run ./bufcounts, the OS scheduler will schedule threads on a random-looking mix of cores. Try running it with `htop` running in a separate window, to see what cores are working. 
+
+Try restricting which cores the program can use with taskset: `taskset -c 0-15 ./bufcounts` vs. `taskset -c 0-7,16-23 ./bufcounts`. The first choice selects cores all in the same socket. The second one selects 8 on one socket, and 8 on the next one over. Note that we aren't actually forcing the threads onto all these cores, but merely restricting the scheduler to using these. In principle, it could schedule all of them on a single core. 
+
+How does performance vary with core assignment? What if you pick cores that are two interconnect hops apart? (say 0-7 and 32-39)?
 
 ### switch to an atomic count
 
