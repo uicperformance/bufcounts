@@ -149,8 +149,8 @@ int main() {
     // Output the result
     if (correct) {
         printf("%d threads, %d items, %d iterations. count: %.2lf buf: %.2lf ns\n",THREAD_MAX, ARRAY_SIZE, ITERATIONS, 
-          elapsed_ns_item / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX),
-         elapsed_ns_buf / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
+          elapsed_ns_item / (double)(ARRAY_SIZE * ITERATIONS),
+         elapsed_ns_buf / (double)(ARRAY_SIZE * ITERATIONS));
     } else {
         printf("Error: Buffer values are incorrect.\n");
     }
