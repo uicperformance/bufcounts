@@ -17,6 +17,10 @@ eval:
 	./bufcounts
 	$(CC) -DTHREAD_MAX=16 -DARRAY_SIZE=32  $(CFLAGS) -o bufcounts bufcounts.c donottouch.c 
 	./bufcounts
+	$(CC) -DTHREAD_MAX=16 -DARRAY_SIZE=64  $(CFLAGS) -o bufcounts bufcounts.c donottouch.c 
+	./bufcounts
+	$(CC) -DTHREAD_MAX=16 -DARRAY_SIZE=128  $(CFLAGS) -o bufcounts bufcounts.c donottouch.c 
+	./bufcounts
 
 clean:
 	rm -f $(TARGET)
