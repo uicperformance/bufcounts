@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -pthread
+CFLAGS=-O3 -Wall -pthread
 TARGET=bufcounts
 
 bufcounts: bufcounts.c donottouch.c 
