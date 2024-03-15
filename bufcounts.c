@@ -114,7 +114,7 @@ int main() {
     // Check that things match up
     for (int i = 0; i < ARRAY_SIZE; i++) {
         long sum = 0;
-        for (int j = 0; j < THREAD_MAX; j++) {
+        for (int j = 0; j < BUF_SIZE; j++) {
             sum+=items[i].buffer.counter[j];
         }
         if (sum != items[i].total_count) {
