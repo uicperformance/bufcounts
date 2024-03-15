@@ -1,5 +1,5 @@
 #include<stdalign.h>
-#define BUF_SIZE 128
+#define BUF_SIZE 1024
 
 typedef struct {
     unsigned long counter[BUF_SIZE];
