@@ -90,7 +90,8 @@ int main() {
 
     malloc_trim(0);
     struct mallinfo2 info = mallinfo2();
-    printf("Heap size is %lu after allocating buffers. Buffers are %u total.\n",info.arena,ARRAY_SIZE*BUF_SIZE*8);
+    if(info.arena > 0) 
+        fprintf(stderr,"Heap size is %lu after allocating buffers. Buffers are %u total.\n",info.arena,ARRAY_SIZE*BUF_SIZE*8);
     pthread_t threads[THREAD_MAX];
     clock_gettime(CLOCK_MONOTONIC, &start_buffer);
         for (int i = 0; i < THREAD_MAX; i++) {
@@ -129,7 +130,7 @@ int main() {
             sum+=items[i].buffer.counter[j];
         }
         if (sum != items[i].total_count) {
-            printf("Error: Item %d has sum %ld != %ld. Expected %d.\n",
+            fprintf(stderr,"Error: Item %d has sum %ld != %ld. Expected %d.\n",
                 i,sum,items[i].total_count,THREAD_MAX*ITERATIONS);
             correct = 0;
             break;
@@ -147,9 +148,9 @@ int main() {
 
     // Output the result
     if (correct) {
-        printf("Running with %d threads, %d items, %d iterations.\n",THREAD_MAX, ARRAY_SIZE, ITERATIONS);
-        printf("Each item count increment took %.2lf nanoseconds.\n", elapsed_ns_item / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
-        printf("Each buffer update took %.2lf nanoseconds.\n", elapsed_ns_buf / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
+        printf("%d threads, %d items, %d iterations. count: %.2lf buf: %.2lf ns\n",THREAD_MAX, ARRAY_SIZE, ITERATIONS, 
+          elapsed_ns_item / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX),
+         elapsed_ns_buf / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
     } else {
         printf("Error: Buffer values are incorrect.\n");
     }
