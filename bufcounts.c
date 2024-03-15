@@ -17,8 +17,20 @@
 #define ITERATIONS 100000
 #endif
 
+#ifdef USE_MUTEX
+typedef pthread_mutex_t lock_t;
+#define lock_acquire pthread_mutex_lock
+#define lock_release pthread_mutex_unlock
+#define lock_init pthread_mutex_init
+#else
+typedef pthread_spinlock_t lock_t;
+#define lock_acquire pthread_spin_lock
+#define lock_release pthread_spin_unlock
+#define lock_init pthread_spin_init
+#endif
+
 typedef struct {
-    pthread_spinlock_t lock;
+    lock_t lock;
     long total_count;
     buf buffer;
 } item;
@@ -27,11 +39,11 @@ item items[ARRAY_SIZE];
 void update_buffer_elements(unsigned thread_id) {
     for (int i = 0; i < ARRAY_SIZE; i++) {
     #if THREAD_MAX > 1
-        pthread_spin_lock(&items[i].lock);
+        lock_acquire(&items[i].lock);
     #endif
         update_buffer(&items[i].buffer,0);
     #if THREAD_MAX > 1
-        pthread_spin_unlock(&items[i].lock);
+        lock_release(&items[i].lock);
     #endif
     }
 }
@@ -39,11 +51,11 @@ void update_buffer_elements(unsigned thread_id) {
 void update_item_counts(unsigned thread_id) {
     for (int i = 0; i < ARRAY_SIZE; i++) {
     #if THREAD_MAX > 1
-        pthread_spin_lock(&items[i].lock);
+        lock_acquire(&items[i].lock);
     #endif
         items[i].total_count++;
     #if THREAD_MAX > 1
-        pthread_spin_unlock(&items[i].lock);
+        lock_release(&items[i].lock);
     #endif
     }
 }
@@ -71,10 +83,9 @@ int main() {
     struct timespec start_buffer, end_buffer, start_item, end_item;
     int correct = 1;
 
-    // Initialize pthread_spinlock_t for each item
     for (int i = 0; i < ARRAY_SIZE; i++) {
         memset(items[i].buffer.counter,0,BUF_SIZE*8);
-        pthread_spin_init(&items[i].lock, 0);
+        lock_init(&items[i].lock, 0);
     }
 
     malloc_trim(0);
@@ -141,11 +152,6 @@ int main() {
         printf("Each buffer update took %.2lf nanoseconds.\n", elapsed_ns_buf / (double)(ARRAY_SIZE * ITERATIONS * THREAD_MAX));
     } else {
         printf("Error: Buffer values are incorrect.\n");
-    }
-
-    // Clean up the spin locks
-    for (int i = 0; i < ARRAY_SIZE; i++) {
-        pthread_spin_destroy(&items[i].lock);
     }
 
     return 0;
