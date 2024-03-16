@@ -75,14 +75,14 @@ Try simply dropping the lock for the buffer updates. Surely this will create rac
 
 Right now, every thread updates the first number in a buffer's count array. Since they share the count, they need a lock. But the validation code near the end of main only checks that the *sum* of all the counts is correct. If you pass the thread ID to update_buffer, it'll increment a different number in counter array. With different counters, you don't need locking.
 
-### a buf has 128 counters, can you use that?
+### a buf has 1024 counters, can you use that?
 
 If you space out the thread IDs so that they increment counts that are on different cache lines, does that help performance?
 Each counter is 8 bytes, so if you space the ID's out by 8, they'll end up on a 64-byte cache line each, eliminating cache contention. 
 
-### what's happening between 32 and 64 items for the buffer update?
+### buf updates are probably still seeing lots of cache evictions
 
-Once your solution runs in the single ns per update with 16 threads, you may find that it goes a great deal slower with 64 items than with 32 items. Can you work out why?
+The buf struct is 8192 bytes. You're not to change the size of this. However, we could further relax which exact counter in the buf we update, and still pass the correctness test. It doesn't have to be counter 0 for thread 0, counter 1 (or 8) for thread 1. After all, this is hideously cache in-efficient, once you go beyond 8 items (i.e. 256kB worth of counters). If you choose the index based on both the item and the thread, you can make much better use of the cache.
 
 ## Turn-in
 
